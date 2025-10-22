@@ -5,6 +5,7 @@ import WhiteHatStats from './WhiteHatStats'
 import Blackhat from './Blackhat';
 import BlackHatStats from './BlackHatStats';
 import * as d3 from 'd3';
+import ThirdView from './ThirdView';
 
 
 function App() {
@@ -147,15 +148,30 @@ function App() {
     )
   }
 
-  //toggle which visualization we're looking at based on the "viewToggle" state
-  const hat = ()=>{
-    if(viewToggle === 'whitehat'){
-      return makeWhiteHat();
-    }
-    else{
-      return makeBlackHat();
-    }
+ // third empty view placeholder
+ function makeThirdView() {
+    return (
+      <>
+       <div style={{ width: '100%', height: '100%' }}>
+          <ThirdView map={map} data={gunData} ToolTip={ToolTip} />
+        </div>
+     </>
+    );
   }
+
+  //toggle which visualization we're looking at based on the "viewToggle" state
+  const hat = () => {
+   switch (viewToggle) {
+      case 'whitehat':
+        return makeWhiteHat();
+      case 'blackhat':
+       return makeBlackHat();
+      case 'thirdview':
+        return makeThirdView();
+      default:
+        return makeBlackHat();
+    }
+  };
 
   return (
     <div className="App">
@@ -172,6 +188,11 @@ function App() {
          className={viewToggle === 'blackhat'? 'inactiveButton':'activeButton'}
          >{"Black Hat"}
         </button>
+        <button 
+        onClick={() => setViewToggle('thirdview')}
+       className={viewToggle === 'thirdview'? 'inactiveButton':'activeButton'}
+        >{"Third View"}
++      </button>
       </div>
       <div className={'body'} 
         style={{'height':'calc(100vh - 2.5em)','width':'100vw'}}
