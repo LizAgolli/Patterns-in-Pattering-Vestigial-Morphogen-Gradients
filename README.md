@@ -21,7 +21,7 @@ It bridges the gap between standard visualization tools (like JMP and R’s ggpl
 ## 👩‍🔬 Client and Team
 
 - **Client:** [Shree Ghag](mailto:bghag2@uic.edu)  
-- **Team Members:** Krish Patel & Abhishek Walvekar  
+- **Team Members:** Krish Patel (kpate446@uic.edu)  & Abhishek Walvekar (awalv@uic.edu)  
 - **Project Manager:** Liz Chen (agoll3@uic.edu)  
 
 ---
