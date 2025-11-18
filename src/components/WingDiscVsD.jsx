@@ -24,7 +24,7 @@ export default function WingDiscVsD() {
       // Process scatter data
       const processed = csvData.map(d => ({
         disc: d.disc,
-        area: +d.area,
+        area: +d.area, //log transformed already, no need to transform
         A: +d.A,
         B: +d.B,
         C: +d.C,
@@ -122,7 +122,7 @@ export default function WingDiscVsD() {
       .attr("text-anchor", "middle")
       .style("font-size", "16px")
       .style("font-weight", "bold")
-      .text("Wing Disc Area");
+      .text("Log Transformed Wing Disc Area");
 
     mainGroup.append("text")
       .attr("transform", `rotate(-90)`)
@@ -131,7 +131,7 @@ export default function WingDiscVsD() {
       .attr("text-anchor", "middle")
       .style("font-size", "16px")
       .style("font-weight", "bold")
-      .text("Standard Deviation (D)");
+      .text("Lambda");
     
     // Title
     mainGroup.append("text")
@@ -140,7 +140,7 @@ export default function WingDiscVsD() {
       .attr("text-anchor", "middle")
       .style("font-size", "18px")
       .style("font-weight", "bold")
-      .text("Wing Disc Area vs Standard Deviation");
+      .text("Wing Disc Area vs Lambda");
 
     // Scatter points - using raw area values
     mainGroup.selectAll("circle.scatter")
