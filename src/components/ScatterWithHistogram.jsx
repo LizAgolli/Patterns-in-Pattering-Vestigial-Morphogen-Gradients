@@ -1,20 +1,40 @@
 import * as d3 from "d3";
-import React, { useEffect, useRef } from "react";
-import { mockData } from "../data/mockData";
+import React, { useEffect, useRef, useState } from "react";
 
 const colors = {
-  Standard: "#ff9900",
-  Hypoxia: "#a56cc1",
-  LowTemp: "#4ab8a1"
+  standard: "#ff9900",
+  hypoxia: "#a56cc1",
+  cold: "#4ab8a1"
 };
 
+// In the data processing, make sure condition names match:
+const processedData = csvData.map(d => ({
+  Area: +d.area,
+  D: +d.D,
+  Condition: d.condition
+}));
+
 export default function ScatterWithHistograms() {
+  const [data, setData] = useState([]);
   const svgRef = useRef();
 
+  // Load CSV data
   useEffect(() => {
+    d3.csv("../data/mergedNormalizedGrad.csv").then(csvData => {
+      const processedData = csvData.map(d => ({
+        Area: +d.area,
+        D: +d.D,
+        Condition: d.condition
+      }));
+      setData(processedData);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (data.length === 0) return;
+
     const width = 700;
     const height = 500;
-
     const plotSize = 350;
     const margin = { top: 70, right: 80, bottom: 50, left: 60 };
 
@@ -23,11 +43,11 @@ export default function ScatterWithHistograms() {
 
     // SCALES
     const x = d3.scaleLinear()
-      .domain(d3.extent(mockData, d => d.Area)).nice()
+      .domain(d3.extent(data, d => d.Area)).nice()
       .range([margin.left, margin.left + plotSize]);
 
     const y = d3.scaleLinear()
-      .domain(d3.extent(mockData, d => d.D)).nice()
+      .domain(d3.extent(data, d => d.D)).nice()
       .range([margin.top + plotSize, margin.top]);
 
     // GRID
@@ -62,7 +82,7 @@ export default function ScatterWithHistograms() {
 
     // SCATTER POINTS
     svg.selectAll("circle")
-      .data(mockData)
+      .data(data)
       .enter()
       .append("circle")
       .attr("cx", d => x(d.Area))
@@ -76,7 +96,7 @@ export default function ScatterWithHistograms() {
     const xHist = d3.scaleLinear().domain(x.domain()).range(x.range());
 
     Object.entries(colors).forEach(([condition, color]) => {
-      const subset = mockData.filter(d => d.Condition === condition);
+      const subset = data.filter(d => d.Condition === condition);
       const bins = d3.bin()
         .value(d => d.Area)
         .domain(x.domain())
@@ -103,7 +123,7 @@ export default function ScatterWithHistograms() {
     const yHist = d3.scaleLinear().domain(y.domain()).range(y.range());
 
     Object.entries(colors).forEach(([condition, color]) => {
-      const subset = mockData.filter(d => d.Condition === condition);
+      const subset = data.filter(d => d.Condition === condition);
       const bins = d3.bin()
         .value(d => d.D)
         .domain(y.domain())
@@ -158,11 +178,11 @@ export default function ScatterWithHistograms() {
       .attr("transform", "rotate(-90)")
       .attr("text-anchor", "middle")
       .text("D");
-  }, []);
+  }, [data]); // Re-run when data changes
 
   return (
     <div>
-      <h2>Scatter + Overlaid Histograms (Mock Data)</h2>
+      <h2>Area vs D with Histograms</h2>
       <svg ref={svgRef} width={700} height={500}></svg>
     </div>
   );

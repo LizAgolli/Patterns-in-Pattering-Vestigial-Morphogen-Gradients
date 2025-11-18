@@ -1,13 +1,10 @@
 import * as d3 from "d3";
 import React, { useEffect, useRef, useState } from "react";
 
-// Import CSV file
-import normVgHypoNormoCSV from "../data/norm_vghypo-normo.csv";
-
 const colors = {
-  Normoxia: "#ff9900",
-  Hypoxia: "#a56cc1",
-  LowTemp: "#4ab8a1"
+  standard: "#ff9900",
+  hypoxia: "#a56cc1",
+  cold: "#4ab8a1"
 };
 
 export default function WingDiscVsD() {
@@ -15,42 +12,36 @@ export default function WingDiscVsD() {
   const [scatterData, setScatterData] = useState([]);
   const [visibleConditions, setVisibleConditions] = useState({
     Normoxia: true,
-    Hypoxia: true
+    Hypoxia: true,
+    Cold: true
   });
 
-  // Load data
+  // Load data - SIMPLE AND RELIABLE
   useEffect(() => {
-    d3.csv(normVgHypoNormoCSV).then((paramsData) => {
+    d3.csv("/data/mergedNormalizedGrad.csv").then((csvData) => {
+      console.log("CSV loaded successfully!", csvData);
+      
       // Process scatter data
-      const processed = paramsData.map(d => ({
+      const processed = csvData.map(d => ({
         disc: d.disc,
         area: +d.area,
         A: +d.A,
         B: +d.B,
         C: +d.C,
         D: +d.D,
-        condition: d.O2 === "normoxia" ? "Normoxia" : "Hypoxia"
+        condition: d.condition
       })).filter(d => 
         !isNaN(d.area) && !isNaN(d.D) && 
         isFinite(d.area) && isFinite(d.D)
       );
       
-      // Normalize area to 0-1
-      const areaExtent = d3.extent(processed, d => d.area);
-      const areaMin = areaExtent[0];
-      const areaMax = areaExtent[1];
-      
-      processed.forEach(d => {
-        d.normalizedArea = (d.area - areaMin) / (areaMax - areaMin);
-      });
-      
-      console.log("Processed data:", processed.slice(0, 5));
-      console.log("Area range:", areaExtent);
-      console.log("D range:", d3.extent(processed, d => d.D));
-      console.log("Normalized area range:", d3.extent(processed, d => d.normalizedArea));
-      
+      console.log("Processed data points:", processed.length);
+      console.log("Conditions found:", [...new Set(processed.map(d => d.condition))]);
       setScatterData(processed);
-    }).catch(err => console.error("Error loading data:", err));
+      
+    }).catch(err => {
+      console.error("Error loading data:", err);
+    });
   }, []);
 
   useEffect(() => {
@@ -71,19 +62,13 @@ export default function WingDiscVsD() {
     // Filter data based on visible conditions
     const filteredData = scatterData.filter(d => visibleConditions[d.condition]);
 
-    // Scales for scatter - use normalized area vs D (use all data for consistent scales)
-    const xExtent = d3.extent(scatterData, d => d.normalizedArea);
-    const yExtent = d3.extent(scatterData, d => d.D);
-    
-    console.log("X extent (normalized area):", xExtent);
-    console.log("Y extent (D):", yExtent);
-    
+    // Scales for scatter - using raw area values
     const xScale = d3.scaleLinear()
-      .domain([0, 1])
+      .domain(d3.extent(scatterData, d => d.area)).nice()
       .range([scatterMargin.left, scatterMargin.left + scatterSize]);
 
     const yScale = d3.scaleLinear()
-      .domain(yExtent).nice()
+      .domain(d3.extent(scatterData, d => d.D)).nice()
       .range([scatterMargin.top + scatterSize, scatterMargin.top]);
 
     // Background
@@ -137,7 +122,7 @@ export default function WingDiscVsD() {
       .attr("text-anchor", "middle")
       .style("font-size", "16px")
       .style("font-weight", "bold")
-      .text("Normalized Wing Disc Area");
+      .text("Wing Disc Area");
 
     mainGroup.append("text")
       .attr("transform", `rotate(-90)`)
@@ -155,29 +140,29 @@ export default function WingDiscVsD() {
       .attr("text-anchor", "middle")
       .style("font-size", "18px")
       .style("font-weight", "bold")
-      .text("Wing Disc vs Standard Deviation");
+      .text("Wing Disc Area vs Standard Deviation");
 
-    // Scatter points
+    // Scatter points - using raw area values
     mainGroup.selectAll("circle.scatter")
       .data(filteredData)
       .join("circle")
       .attr("class", "scatter")
-      .attr("cx", d => xScale(d.normalizedArea))
+      .attr("cx", d => xScale(d.area))
       .attr("cy", d => yScale(d.D))
       .attr("r", 4)
-      .attr("fill", d => colors[d.condition])
+      .attr("fill", d => colors[d.condition] || "#999")
       .attr("opacity", 0.7)
       .attr("stroke", "#fff")
       .attr("stroke-width", 1);
 
-    // Top histogram
+    // Top histogram - using raw area values
     Object.entries(colors).forEach(([condition, color]) => {
       if (!visibleConditions[condition]) return;
       const subset = filteredData.filter(d => d.condition === condition);
       if (subset.length === 0) return;
 
       const bins = d3.bin()
-        .value(d => d.normalizedArea)
+        .value(d => d.area)
         .domain(xScale.domain())
         .thresholds(20)(subset);
 
@@ -237,10 +222,12 @@ export default function WingDiscVsD() {
       .style("font-weight", "bold")
       .text("Condition");
 
-    const legendItems = [
-      { label: "Normoxia", color: colors.Normoxia, checked: true },
-      { label: "Hypoxia", color: colors.Hypoxia, checked: true }
-    ];
+    // Create legend items based on actual conditions in data
+    const conditionsInData = [...new Set(scatterData.map(d => d.condition))];
+    const legendItems = conditionsInData.map(condition => ({
+      label: condition,
+      color: colors[condition] || "#999"
+    }));
 
     legendItems.forEach((item, i) => {
       const g = mainGroup.append("g")
@@ -281,11 +268,14 @@ export default function WingDiscVsD() {
         .text(item.label);
     });
 
-
   }, [scatterData, visibleConditions]);
 
   return (
     <div style={{ padding: "20px", backgroundColor: "#fff" }}>
+      <h2>Wing Disc Area vs Standard Deviation (D)</h2>
+      <div style={{ color: "green", marginBottom: "10px" }}>
+        Loaded {scatterData.length} data points
+      </div>
       <svg ref={svgRef} width={1000} height={800} style={{ border: "1px solid #ddd" }}></svg>
       
       {scatterData.length === 0 && (
@@ -296,4 +286,3 @@ export default function WingDiscVsD() {
     </div>
   );
 }
-
