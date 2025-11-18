@@ -122,7 +122,7 @@ export default function WingDiscVsD() {
       .attr("text-anchor", "middle")
       .style("font-size", "16px")
       .style("font-weight", "bold")
-      .text("Log Transformed Wing Disc Area");
+      .text("Area");
 
     mainGroup.append("text")
       .attr("transform", `rotate(-90)`)
